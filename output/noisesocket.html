@@ -42,11 +42,11 @@
 <p>NoiseSocket can encode Noise messages and associated negotiation data into a form suitable for transmission over reliable, stream-based protocols such as TCP.</p>
 <p></p>
 <h1 id="overview">1. Overview</h1>
-<p>The Noise Protocol Framework <span class="citation">[<a href="#ref-noise">1</a>]</span> describes simple <strong>Noise protocols</strong>. A Noise protocol sends a fixed sequence of handshake messages based on a fixed set of cryptographic choices. In some situations the responder needs flexibility to accept or reject the initiator's Noise protocol choice, or make its own choice based on options offered by the initiator.</p>
-<p>The <strong>NoiseSocket</strong> framework allows the initiator and responder to negotiate a particular Noise protocol. This is a two-step process:</p>
+<p>The Noise Protocol Framework <span class="citation">[<a href="#ref-noise">1</a>]</span> describes <strong>Noise protocols</strong>. A Noise protocol sends a fixed sequence of handshake messages based on a fixed set of cryptographic choices. In some situations the responder needs flexibility to accept or reject the initiator's Noise protocol choice, or make its own choice based on options offered by the initiator.</p>
+<p>The <strong>NoiseSocket</strong> framework allows <strong>compound protocols</strong> where the initiator and responder negotiate a particular Noise protocol. This is a two-step process:</p>
 <ul>
 <li><p>The initiator begins executing an initial Noise protocol and sends an initial Noise handshake message. As a preamble to this message, the initiator can send some <strong>negotiation data</strong> which indicates the initial Noise protocol and can advertise support for other Noise protocols.</p></li>
-<li><p>The responder can <strong>accept</strong> the initiator's choice of initial Noise protocol; <strong>switch</strong> to a different Noise protocol; ask the initiator to <strong>retry</strong> a different Noise protocol; or <strong>reject</strong> the handshake entirely. The responder indicates this choice by sending some negotiation data back to the initiator, or closing the connection.</p></li>
+<li><p>The responder can <strong>accept</strong> the initiator's choice of initial Noise protocol; <strong>switch</strong> to a different Noise protocol; <strong>request retry</strong> with a different Noise protocol; or <strong>reject</strong> the handshake entirely. The responder indicates this choice by sending some negotiation data back to the initiator, or closing the connection.</p></li>
 </ul>
 <p>NoiseSocket doesn't specify the contents of negotiation data, since different applications will encode and advertise protocol support in different ways. NoiseSocket just defines a message format to transport this data.</p>
 <p>NoiseSocket handles two other low-level issues:</p>
@@ -84,21 +84,43 @@
 </ul>
 <p>The <code>body_len</code> field is a 2-byte unsigned integer, encoded in big-endian, that stores the number of bytes for the following <code>body</code> field. Following the <code>body</code> field the remainder of the decrypted plaintext will be padding bytes, which may contain arbitrary data and must be ignored by the recipient.</p>
 <h1 id="negotiation">3. Negotiation</h1>
-<p>The initiator will choose the initial underlying Noise protocol, and will indicate this to the responder using the <code>negotiation_data</code> field.</p>
-<p>Upon receiving an initial NoiseSocket message, the responder has five options:</p>
+<p>The initiator will choose the initial Noise protocol, and will indicate this to the responder using the <code>negotiation_data</code> field. Upon receiving an initial NoiseSocket message, the responder has five options:</p>
 <ul>
-<li><p><strong>Silent rejection</strong>: The responder closes the network connection.</p></li>
-<li><p><strong>Explicit rejection</strong>: The responder sends a single NoiseSocket handshake message. The <code>negotiation_data</code> field must be non-empty and contain an error message. The <code>noise_message</code> field must be empty. After sending this message, the responder closes the network connection.</p></li>
-<li><p><strong>Acceptance</strong>: The responder sends a NoiseSocket handshake message containing the next handshake message in the initial Noise protocol. The <code>negotiation_data</code> field must be empty.</p></li>
-<li><p><strong>Switch protocol</strong>: The responder sends a NoiseSocket handshake message containing a handshake message from a new Noise protocol (typically a fallback protocol), different from the initial Noise protocol. The <code>negotiation_data</code> field must be non-empty. The <code>noise_message</code> field must be non-empty.</p></li>
-<li><p><strong>Retry request</strong>: The responder requests the initiator to send a NoiseSocket handshake message containing a handshake message from a new Noise protocol, different from the initial Noise protocol. The <code>negotiation_data</code> field must be non-empty. The <code>noise_message</code> field must be empty.</p></li>
+<li><p><strong>Accept</strong>: The responder accepts the initial Noise protocol. If this is an interactive protocol, the responder sends a NoiseSocket handshake message containing the next handshake message in the initial Noise protocol. The <code>negotiation_data</code> field of this response message must be empty.</p></li>
+<li><p><strong>Switch</strong>: The responder sends a NoiseSocket handshake message containing a handshake message from a new Noise protocol (e.g. a fallback protocol), different from the initial Noise protocol. The <code>negotiation_data</code> field must be non-empty. The <code>noise_message</code> field must be non-empty.</p></li>
+<li><p><strong>Request Retry</strong>: The responder requests the initiator to send a NoiseSocket handshake message containing a handshake message from a new Noise protocol, different from the initial Noise protocol. The <code>negotiation_data</code> field must be non-empty. The <code>noise_message</code> field must be empty.</p></li>
+<li><p><strong>Explicit Reject</strong>: The responder sends a single NoiseSocket handshake message. The <code>negotiation_data</code> field must be non-empty and contain an error message. The <code>noise_message</code> field must be empty. After sending this message, the responder closes the network connection.</p></li>
+<li><p><strong>Silent Reject</strong>: The responder closes the network connection.</p></li>
 </ul>
+<p>The following table indicates the cases where the response <code>negotiation_data</code> and <code>noise_message</code> fields are non-empty.</p>
+<table style="width:71%;">
+<colgroup>
+<col width="70%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td><pre><code>                   Negotiation      Message</code></pre></td>
+</tr>
+<tr class="even">
+<td><pre><code>Accept                 -              Yes</code></pre></td>
+</tr>
+<tr class="odd">
+<td><pre><code>Switch                 Yes            Yes</code></pre></td>
+</tr>
+<tr class="even">
+<td><pre><code>Request Retry          Yes            -</code></pre></td>
+</tr>
+<tr class="odd">
+<td><pre><code>Explicit Reject        Yes            -</code></pre></td>
+</tr>
+</tbody>
+</table>
 <p>The initiator's first <code>negotiation_data</code> field must indicate the initial Noise protocol and what other Noise protocols the initiator can support for the switch and retry cases. How this is encoded is up to the application.</p>
-<p>If the responder's first <code>negotiation_data</code> field is empty, then the initial protocol was accepted. If the field is non-empty, it must encode values that distinguish betwen the &quot;explicit rejection&quot;, &quot;switch&quot;, and &quot;retry&quot; cases. In the first case, the <code>negotiation_data</code> must encode an error message. In the latter two cases, the <code>negotiation_data</code> must encode the Noise protocol the initiator should switch to or retry with.</p>
+<p>If the responder's first <code>negotiation_data</code> field is empty, then the initial protocol was accepted. If the field is non-empty, it must encode values that distinguish betwen the &quot;switch&quot;, &quot;retry&quot;, and &quot;reject&quot; cases. In the first two cases, the <code>negotiation_data</code> must encode the Noise protocol the initiator should switch to or retry with. In the last case, the <code>negotiation_data</code> must encode an error message.</p>
 <p>When the initiator receives the first NoiseSocket response message, and for all later handshake messages received by both parties, the only options are silent rejection, explicit rejection, or acceptance.</p>
 <p>Example negotiation flows:</p>
 <ul>
-<li><p>It's easy for the responder to change symmetric crypto options by switching to a fallback protocol. For example, if the initial Noise protocol is <code>Noise_XX_25519_AESGCM_SHA256</code>, the responder can switch to <code>Noise_XX+fallback_25519_ChaChaPoly_BLAKE2s</code>. This reuses the ephemeral public key from the initiator's initial message.</p></li>
+<li><p>It's easy for the responder to change symmetric crypto options by switching to a different protocol. For example, if the initial Noise protocol is <code>Noise_XX_25519_AESGCM_SHA256</code>, the responder can switch to <code>Noise_XX+fallback_25519_ChaChaPoly_BLAKE2s</code>. This reuses the ephemeral public key from the initiator's initial message.</p></li>
 <li><p>If the initiator attempts 0-RTT encryption that the responder fails to decrypt, the responder can also switch to a fallback protocol. For example, if the initial Noise protocol is <code>Noise_IK_25519_AESGCM_SHA256</code>, the responder can fallback to <code>Noise_XX+fallback_25519_AESGCM_SHA256</code>. This reuses the ephemeral public key from the initiator's initial message.</p></li>
 <li><p>If the responder wants to use a DH function that the initiator supports but did not send an ephemeral public key for, in the initial message, then the responder might need to request a retry. For example, if the initial Noise protocol is <code>Noise_XX_25519_AESGCM_SHA256</code>, the responder can request retry with <code>Noise_XX_448_AESGCM_SHA256</code>, causing the initiator to respond with a NoiseSocket message containing the initial message from the <code>Noise_XX</code> pattern with a Curve448 ephemeral public key.</p></li>
 </ul>

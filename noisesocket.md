@@ -24,17 +24,17 @@ form suitable for transmission over reliable, stream-based protocols such as TCP
 1. Overview
 ====================
 
-The Noise Protocol Framework [@noise] describes simple **Noise protocols**.  A Noise
+The Noise Protocol Framework [@noise] describes **Noise protocols**.  A Noise
 protocol sends a fixed sequence of handshake messages based on a fixed set of
 cryptographic choices.  In some situations the responder
 needs flexibility to accept or reject the initiator's Noise protocol choice, or
 make its own choice based on options offered by the initiator.  
 
-The **NoiseSocket** framework allows the initiator and responder to negotiate a particular Noise protocol.  This is a two-step process:
+The **NoiseSocket** framework allows **compound protocols** where the initiator and responder negotiate a particular Noise protocol.  This is a two-step process:
 
  * The initiator begins executing an initial Noise protocol and sends an initial Noise handshake message.  As a preamble to this message, the initiator can send some **negotiation data** which indicates the initial Noise protocol and can advertise support for other Noise protocols.
 
- * The responder can **accept** the initiator's choice of initial Noise protocol; **switch** to a different Noise protocol; ask the initiator to **retry** a different Noise protocol; or **reject** the handshake entirely.  The responder indicates this choice by sending some negotiation data back to the initiator, or closing the connection.
+ * The responder can **accept** the initiator's choice of initial Noise protocol; **switch** to a different Noise protocol; **request retry** with a different Noise protocol; or **reject** the handshake entirely.  The responder indicates this choice by sending some negotiation data back to the initiator, or closing the connection.
 
 NoiseSocket doesn't specify the contents of negotiation data, since different applications will encode and advertise protocol support in different ways.  NoiseSocket just defines a message format to transport this data.
 
@@ -92,29 +92,42 @@ The `body_len` field is a 2-byte unsigned integer, encoded in big-endian, that s
 3. Negotiation
 ===============
 
-The initiator will choose the initial underlying Noise protocol, and will indicate this to the responder using the `negotiation_data` field.
+The initiator will choose the initial Noise protocol, and will indicate this to the responder using the `negotiation_data` field.  Upon receiving an initial NoiseSocket message, the responder has five options:
 
-Upon receiving an initial NoiseSocket message, the responder has five options:
+ * **Accept**:  The responder accepts the initial Noise protocol.  If this is an interactive protocol, the responder sends a NoiseSocket handshake message containing the next handshake message in the initial Noise protocol.  The `negotiation_data` field of this response message must be empty.
 
- * **Silent rejection**:  The responder closes the network connection.
+ * **Switch**: The responder sends a NoiseSocket handshake message containing a handshake message from a new Noise protocol (e.g. a fallback protocol), different from the initial Noise protocol.  The `negotiation_data` field must be non-empty.  The `noise_message` field must be non-empty.
 
- * **Explicit rejection**:  The responder sends a single NoiseSocket handshake message.  The `negotiation_data` field must be non-empty and contain an error message.  The `noise_message` field must be empty.  After sending this message, the responder closes the network connection. 
+ * **Request Retry**: The responder requests the initiator to send a NoiseSocket handshake message containing a handshake message from a new Noise protocol, different from the initial Noise protocol.  The `negotiation_data` field must be non-empty.  The `noise_message` field must be empty.
 
- * **Acceptance**:  The responder sends a NoiseSocket handshake message containing the next handshake message in the initial Noise protocol.  The `negotiation_data` field must be empty.
+ * **Explicit Reject**:  The responder sends a single NoiseSocket handshake message.  The `negotiation_data` field must be non-empty and contain an error message.  The `noise_message` field must be empty.  After sending this message, the responder closes the network connection. 
 
- * **Switch protocol**: The responder sends a NoiseSocket handshake message containing a handshake message from a new Noise protocol (typically a fallback protocol), different from the initial Noise protocol.  The `negotiation_data` field must be non-empty.  The `noise_message` field must be non-empty.
+ * **Silent Reject**:  The responder closes the network connection.
 
- * **Retry request**: The responder requests the initiator to send a NoiseSocket handshake message containing a handshake message from a new Noise protocol, different from the initial Noise protocol.  The `negotiation_data` field must be non-empty.  The `noise_message` field must be empty.
+The following table indicates the cases where the response `negotiation_data` and `noise_message` fields are non-empty.
+
++--------------------------------------------------+
+|                        Negotiation      Message  |           
++--------------------------------------------------+
+|     Accept                 -              Yes    |
++--------------------------------------------------+
+|     Switch                 Yes            Yes    |
++--------------------------------------------------+
+|     Request Retry          Yes            -      |
++--------------------------------------------------+
+|     Explicit Reject        Yes            -      |
++--------------------------------------------------+
+
 
 The initiator's first `negotiation_data` field must indicate the initial Noise protocol and what other Noise protocols the initiator can support for the switch and retry cases.  How this is encoded is up to the application.
 
-If the responder's first `negotiation_data` field is empty, then the initial protocol was accepted.  If the field is non-empty, it must encode values that distinguish betwen the "explicit rejection", "switch", and "retry" cases.  In the first case, the `negotiation_data` must encode an error message.  In the latter two cases, the `negotiation_data` must encode the Noise protocol the initiator should switch to or retry with.
+If the responder's first `negotiation_data` field is empty, then the initial protocol was accepted.  If the field is non-empty, it must encode values that distinguish betwen the "switch", "retry", and "reject" cases.    In the first two cases, the `negotiation_data` must encode the Noise protocol the initiator should switch to or retry with.  In the last case, the `negotiation_data` must encode an error message.
 
 When the initiator receives the first NoiseSocket response message, and for all later handshake messages received by both parties, the only options are silent rejection, explicit rejection, or acceptance. 
 
 Example negotiation flows:
 
- * It's easy for the responder to change symmetric crypto options by switching to a fallback protocol.  For example, if the initial Noise protocol is `Noise_XX_25519_AESGCM_SHA256`, the responder can switch to `Noise_XX+fallback_25519_ChaChaPoly_BLAKE2s`.  This reuses the ephemeral public key from the initiator's initial message.
+ * It's easy for the responder to change symmetric crypto options by switching to a different protocol.  For example, if the initial Noise protocol is `Noise_XX_25519_AESGCM_SHA256`, the responder can switch to `Noise_XX+fallback_25519_ChaChaPoly_BLAKE2s`.  This reuses the ephemeral public key from the initiator's initial message.
 
  * If the initiator attempts 0-RTT encryption that the responder fails to decrypt, the responder can also switch to a fallback protocol.  For example, if the initial Noise protocol is `Noise_IK_25519_AESGCM_SHA256`, the responder can fallback to `Noise_XX+fallback_25519_AESGCM_SHA256`.  This reuses the ephemeral public key from the initiator's initial message.
 
