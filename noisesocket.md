@@ -181,7 +181,7 @@ The NoiseSocket specification (this document) is hereby placed in the public dom
 6. Acknowledgements
 ========
 
-Thanks to Rhys Weatherley for helpful discussion.
+Thanks to Rhys Weatherley, Gerardo di Giacomo, Nemanja Mijailovic, Christopher Wood, and Justin Cormack for helpful discussion.
 
 7. References
 ========
