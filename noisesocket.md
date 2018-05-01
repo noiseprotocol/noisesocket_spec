@@ -4,11 +4,9 @@ author:
  - 'Alexey Ermishkin'
  - 'Trevor Perrin'
 revision:   '2draft'
+status: 'official/unstable'
 date:       '2018-05-01'
-bibliography: 'my.bib'
 link-citations: 'true'
-csl:        'ieee-with-url.csl'
-pdfn: 'noisesocket.pdf'
 ---
 
 **Abstract**
