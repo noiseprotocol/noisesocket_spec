@@ -42,7 +42,7 @@ NoiseSocket handles two other low-level issues:
 
  * NoiseSocket defines length fields for all messages, so NoiseSocket messages can be used with stream-based protocols like TCP.
 
- * NoiseSocket defines padding fields which are included in every ciphertext, so that applications can pad their messages to avoid revealing plaintext lengths to an eavesdropper.
+ * NoiseSocket defines padding fields which are included in ciphertexts so that applications can pad their messages to avoid revealing plaintext lengths to an eavesdropper.
 
 
 2. Message Formats

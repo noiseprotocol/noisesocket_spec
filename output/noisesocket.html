@@ -53,7 +53,7 @@
 <p>NoiseSocket handles two other low-level issues:</p>
 <ul>
 <li><p>NoiseSocket defines length fields for all messages, so NoiseSocket messages can be used with stream-based protocols like TCP.</p></li>
-<li><p>NoiseSocket defines padding fields which are included in every ciphertext, so that applications can pad their messages to avoid revealing plaintext lengths to an eavesdropper.</p></li>
+<li><p>NoiseSocket defines padding fields which are included in ciphertexts so that applications can pad their messages to avoid revealing plaintext lengths to an eavesdropper.</p></li>
 </ul>
 <h1 id="message-formats">2. Message Formats</h1>
 <p>A NoiseSocket protocol begins with a <strong>handshake phase</strong>. During the handshake phase each NoiseSocket message contains a single <strong>handshake message</strong> from some underlying Noise protocol, plus optional negotiation data.</p>
