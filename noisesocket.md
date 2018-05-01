@@ -36,7 +36,7 @@ The **NoiseSocket** framework allows the initiator and responder to negotiate a 
 
  * The responder can **accept** the initiator's choice of initial Noise protocol; **switch** to a different Noise protocol; ask the initiator to **retry** a different Noise protocol; or **reject** the handshake entirely.  The responder indicates this choice by sending some negotiation data back to the initiator, or closing the connection.
 
-NoiseSocket doesn't specify the contents of negotiation data, since different applications will encode and advertise protocol support in different ways.  NoiseSocket just defines a message format to transport this data, and APIs to access it.
+NoiseSocket doesn't specify the contents of negotiation data, since different applications will encode and advertise protocol support in different ways.  NoiseSocket just defines a message format to transport this data.
 
 NoiseSocket handles two other low-level issues:
 
@@ -148,76 +148,16 @@ If the responder requests a retry, the prologue is the same as above except the 
 
 Finally, the application using NoiseSocket may append an arbitrary **application prologue** following the above data.  
 
-5. API
-======
 
-The initiator uses the following functions during the handshake phase.  These functions are described in the order they would typically be used to send the initial handshake message and process the first response.  In particular, the initiator would "peek" at the negotiation data in the first response message, then decide whether reinitialization is necessary (if the negotiation data indicates a reinitialization request or a fallback message).
-
-**`Initialize`**:
-
- * INPUT: pattern, dh, cipher, hash
- * OUTPUT: session object
-
-**`WriteHandshakeMessage`**:
-
- * INPUT: negotiation_data, message_body, padded_len
-    - `negotiation_data` is zero-length if omitted
-    - `message_body` is zero-length if omitted
-    - If this message has an encrypted payload and `noise_message_len` would be less than `padded_len`, padding is added to make `noise_message_len` equal `padded_len`.
- * OUTPUT: handshake_message
-
-**`PeekHandshakeMessage`**:
-
- * INPUT: handshake_message
- * OUTPUT: negotiation_data
-
-**`Reinitialize`**:
-
- * INPUT: fallback pattern or reinitialization pattern, dh, cipher, hash
- * OUTPUT: session object
-
-**`ReadHandshakeMessage`**:
-
- * INPUT: handshake_message
- * OUTPUT: message_body
-
-The server will use the same functions, except it will first "peek" at the initial message, then call `Initialize` if it is accepting the initial protocol, or `Reinitialize` if it is changing protocols with a fallback message or reinitialization request.
-
-If the responder is sending an explicit rejection or reinitialization request, it will use the following function:
-
-**`WriteEmptyHandshakeMessage`**:
-
- * INPUT: negotiation_data
- * OUTPUT: handshake_message
-
-Following the first exchange of handshake messages, the parties will continue calling `ReadHandshakeMessage` and `WriteHandshakeMessage` until the handshake is complete.
-
-After the handshake is complete, both parties will call `WriteMessage` and `ReadMessage` to send transport messages.  Every call to `WriteMessage` will produce a NoiseSocket transport message, and every call to `ReadMessage` will decrypt a NoiseSocket transport message and return its body.
-
-\newpage
-
-**`WriteMessage`**:
-
- * INPUT: message_body, padded_len
-    - `padded_len` is zero (no padding) if omitted
-    - If `noise_message_len` would be less than `padded_len`, padding is added to make `noise_message_len` equal `padded_len`.
- * OUTPUT: transport_message
- 
-**`ReadMessage`**:
-
- * INPUT: transport_message
- * OUTPUT: message_body
-
-
-6. IPR
+5. IPR
 ========
 
 The NoiseSocket specification (this document) is hereby placed in the public domain.
 
-7. Acknowledgements
+6. Acknowledgements
 ========
 
 Thanks to Rhys Weatherley for helpful discussion.
 
-8. References
+7. References
 ========
