@@ -134,20 +134,20 @@ Example negotiation flows:
  * If the responder wants to use a DH function that the initiator supports but did not send an ephemeral public key for, in the initial message, then the responder might need to request a retry.  For example, if the initial Noise protocol is `Noise_XX_25519_AESGCM_SHA256`, the responder can request retry with `Noise_XX_448_AESGCM_SHA256`, causing the initiator to respond with a NoiseSocket message containing the initial message from the `Noise_XX` pattern with a Curve448 ephemeral public key.
 
 
-
+\newpage
 
 4. Prologue
 ============
  
 Noise protocols take a **prologue** input.  The prologue is cryptographically authenticated to make sure both parties have the same view of it.
 
-The prologue for the initial Noise protocol is set to the UTF-8 string "NoiseSocketInit1" followed by all bytes transmitted prior to the `noise_message_len`.  This consists of the following values concatenated together:
+The prologue for the initial Noise protocol is set to the UTF-8 string "NoiseSocketInit1" followed by all bytes transmitted in the NoiseSocket protocol prior to the `noise_message_len`.  This consists of the following values concatenated together:
 
  * The UTF-8 string "NoiseSocketInit1"
  * The initial message's `negotiation_data_len`
  * The initial message's `negotiation_data`
 
-If the responder switches the Noise protocol, the prologue is set to the UTF-8 string "NoiseSocketInit2" followed by all bytes received and transmitted prior to the `noise_message_len`.  This consists of the following values concatenated together:
+If the responder switches the Noise protocol, the prologue is set to the UTF-8 string "NoiseSocketInit2" followed by all bytes received and transmitted in the NoiseSocket protocol prior to the `noise_message_len` in the response message.  This consists of the following values concatenated together:
 
  * The UTF-8 string "NoiseSocketInit2"
  * The initial message's `negotiation_data_len`
@@ -157,9 +157,20 @@ If the responder switches the Noise protocol, the prologue is set to the UTF-8 s
  * The responding message's `negotiation_data_len`
  * The responding message's `negotiation_data`
 
-If the responder requests a retry, the prologue is the same as above except the string "NoiseSocketInit3" is used.
+If the responder requests retry with a different Noise protocol, the prologue is set to the UTF-8 string "NoiseSocketInit3" followed by all bytes received and transmitted in the NoiseSocket protocol prior to the `noise_message_len` in the retry message.  This consists of the following values concatenated together:
 
-Finally, the application using NoiseSocket may append an arbitrary **application prologue** following the above data.  
+ * The UTF-8 string "NoiseSocketInit3"
+ * The initial message's `negotiation_data_len`
+ * The initial message's `negotiation_data`
+ * The initial message's `noise_message_len`
+ * The initial message's `noise_message`
+ * The responding message's `negotiation_data_len`
+ * The responding message's `negotiation_data`
+ * The responding message's `noise_message_len` (i.e. two bytes of zeros)
+ * The retry message's `negotiation_data_len`
+ * The retry message's `negotiation_data`
+
+Finally, the application using NoiseSocket may append an arbitrary **application prologue** byte sequence following the above data.  
 
 
 5. IPR

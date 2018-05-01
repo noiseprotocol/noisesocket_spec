@@ -124,15 +124,16 @@
 <li><p>If the initiator attempts 0-RTT encryption that the responder fails to decrypt, the responder can also switch to a fallback protocol. For example, if the initial Noise protocol is <code>Noise_IK_25519_AESGCM_SHA256</code>, the responder can fallback to <code>Noise_XX+fallback_25519_AESGCM_SHA256</code>. This reuses the ephemeral public key from the initiator's initial message.</p></li>
 <li><p>If the responder wants to use a DH function that the initiator supports but did not send an ephemeral public key for, in the initial message, then the responder might need to request a retry. For example, if the initial Noise protocol is <code>Noise_XX_25519_AESGCM_SHA256</code>, the responder can request retry with <code>Noise_XX_448_AESGCM_SHA256</code>, causing the initiator to respond with a NoiseSocket message containing the initial message from the <code>Noise_XX</code> pattern with a Curve448 ephemeral public key.</p></li>
 </ul>
+
 <h1 id="prologue">4. Prologue</h1>
 <p>Noise protocols take a <strong>prologue</strong> input. The prologue is cryptographically authenticated to make sure both parties have the same view of it.</p>
-<p>The prologue for the initial Noise protocol is set to the UTF-8 string &quot;NoiseSocketInit1&quot; followed by all bytes transmitted prior to the <code>noise_message_len</code>. This consists of the following values concatenated together:</p>
+<p>The prologue for the initial Noise protocol is set to the UTF-8 string &quot;NoiseSocketInit1&quot; followed by all bytes transmitted in the NoiseSocket protocol prior to the <code>noise_message_len</code>. This consists of the following values concatenated together:</p>
 <ul>
 <li>The UTF-8 string &quot;NoiseSocketInit1&quot;</li>
 <li>The initial message's <code>negotiation_data_len</code></li>
 <li>The initial message's <code>negotiation_data</code></li>
 </ul>
-<p>If the responder switches the Noise protocol, the prologue is set to the UTF-8 string &quot;NoiseSocketInit2&quot; followed by all bytes received and transmitted prior to the <code>noise_message_len</code>. This consists of the following values concatenated together:</p>
+<p>If the responder switches the Noise protocol, the prologue is set to the UTF-8 string &quot;NoiseSocketInit2&quot; followed by all bytes received and transmitted in the NoiseSocket protocol prior to the <code>noise_message_len</code> in the response message. This consists of the following values concatenated together:</p>
 <ul>
 <li>The UTF-8 string &quot;NoiseSocketInit2&quot;</li>
 <li>The initial message's <code>negotiation_data_len</code></li>
@@ -142,8 +143,20 @@
 <li>The responding message's <code>negotiation_data_len</code></li>
 <li>The responding message's <code>negotiation_data</code></li>
 </ul>
-<p>If the responder requests a retry, the prologue is the same as above except the string &quot;NoiseSocketInit3&quot; is used.</p>
-<p>Finally, the application using NoiseSocket may append an arbitrary <strong>application prologue</strong> following the above data.</p>
+<p>If the responder requests retry with a different Noise protocol, the prologue is set to the UTF-8 string &quot;NoiseSocketInit3&quot; followed by all bytes received and transmitted in the NoiseSocket protocol prior to the <code>noise_message_len</code> in the retry message. This consists of the following values concatenated together:</p>
+<ul>
+<li>The UTF-8 string &quot;NoiseSocketInit3&quot;</li>
+<li>The initial message's <code>negotiation_data_len</code></li>
+<li>The initial message's <code>negotiation_data</code></li>
+<li>The initial message's <code>noise_message_len</code></li>
+<li>The initial message's <code>noise_message</code></li>
+<li>The responding message's <code>negotiation_data_len</code></li>
+<li>The responding message's <code>negotiation_data</code></li>
+<li>The responding message's <code>noise_message_len</code> (i.e. two bytes of zeros)</li>
+<li>The retry message's <code>negotiation_data_len</code></li>
+<li>The retry message's <code>negotiation_data</code></li>
+</ul>
+<p>Finally, the application using NoiseSocket may append an arbitrary <strong>application prologue</strong> byte sequence following the above data.</p>
 <h1 id="ipr">5. IPR</h1>
 <p>The NoiseSocket specification (this document) is hereby placed in the public domain.</p>
 <h1 id="acknowledgements">6. Acknowledgements</h1>
