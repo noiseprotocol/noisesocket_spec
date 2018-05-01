@@ -77,7 +77,7 @@
 </ul>
 <p>The <code>noise_message_len</code> field is a 2-byte unsigned integer, encoded in big-endian, that stores the number of bytes for the following <code>noise_message</code> field.</p>
 <h2 id="encrypted-payloads">2.3. Encrypted payloads</h2>
-<p>Each Noise transport message consists of a single encrypted payload. Each Noise handshake message might contain a a single encrypted payload (or might contain a cleartext payload). When these payloads are decrypted, the plaintext will have the following structure:</p>
+<p>Each Noise transport message consists of a single encrypted payload. Each Noise handshake message might contain a single encrypted payload (or might contain a cleartext payload). When these encrypted payloads are decrypted, the plaintext will have the following structure:</p>
 <ul>
 <li><code>body_len</code> (2 bytes)</li>
 <li><code>body</code></li>

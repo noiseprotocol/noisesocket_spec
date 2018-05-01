@@ -79,7 +79,7 @@ The `noise_message_len` field is a 2-byte unsigned integer, encoded in big-endia
 
 2.3. Encrypted payloads
 ----------------------
-Each Noise transport message consists of a single encrypted payload.  Each Noise handshake message might contain a a single encrypted payload (or might contain a cleartext payload).  When these payloads are decrypted, the plaintext will have the following structure:
+Each Noise transport message consists of a single encrypted payload.  Each Noise handshake message might contain a single encrypted payload (or might contain a cleartext payload).  When these encrypted payloads are decrypted, the plaintext will have the following structure:
 
  - `body_len` (2 bytes)
  - `body`
