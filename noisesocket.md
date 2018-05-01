@@ -28,7 +28,7 @@ The Noise Protocol Framework [@noise] describes simple **Noise protocols**.  A N
 protocol sends a fixed sequence of handshake messages based on a fixed set of
 cryptographic choices.  In some situations the responder
 needs flexibility to accept or reject the initiator's Noise protocol choice, or
-make its own choice based on options offered by the initiator.
+make its own choice based on options offered by the initiator.  
 
 The **NoiseSocket** framework allows the initiator and responder to negotiate a particular Noise protocol.  This is a two-step process:
 
@@ -81,13 +81,13 @@ The `noise_message_len` field is a 2-byte unsigned integer, encoded in big-endia
 
 2.3. Encrypted payloads
 ----------------------
-Some Noise messages will carry an encrypted payload.  When this payload is decrypted, the plaintext will have the following structure:
+Each Noise transport message consists of a single encrypted payload.  Each Noise handshake message might contain a a single encrypted payload (or might contain a cleartext payload).  When these payloads are decrypted, the plaintext will have the following structure:
 
  - `body_len` (2 bytes)
  - `body`
  - `padding`
 
-The `body_len` field is a 2-byte unsigned integer, encoded in big-endian, that stores the number of bytes for the following `body` field.  Following the `body` field the remainder of the plaintext will be padding bytes, which may contain arbitrary data and must be ignored by the recipient.
+The `body_len` field is a 2-byte unsigned integer, encoded in big-endian, that stores the number of bytes for the following `body` field.  Following the `body` field the remainder of the decrypted plaintext will be padding bytes, which may contain arbitrary data and must be ignored by the recipient.
 
 3. Negotiation
 ===============

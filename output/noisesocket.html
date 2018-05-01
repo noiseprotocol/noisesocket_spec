@@ -77,13 +77,13 @@
 </ul>
 <p>The <code>noise_message_len</code> field is a 2-byte unsigned integer, encoded in big-endian, that stores the number of bytes for the following <code>noise_message</code> field.</p>
 <h2 id="encrypted-payloads">2.3. Encrypted payloads</h2>
-<p>Some Noise messages will carry an encrypted payload. When this payload is decrypted, the plaintext will have the following structure:</p>
+<p>Each Noise transport message consists of a single encrypted payload. Each Noise handshake message might contain a a single encrypted payload (or might contain a cleartext payload). When these payloads are decrypted, the plaintext will have the following structure:</p>
 <ul>
 <li><code>body_len</code> (2 bytes)</li>
 <li><code>body</code></li>
 <li><code>padding</code></li>
 </ul>
-<p>The <code>body_len</code> field is a 2-byte unsigned integer, encoded in big-endian, that stores the number of bytes for the following <code>body</code> field. Following the <code>body</code> field the remainder of the plaintext will be padding bytes, which may contain arbitrary data and must be ignored by the recipient.</p>
+<p>The <code>body_len</code> field is a 2-byte unsigned integer, encoded in big-endian, that stores the number of bytes for the following <code>body</code> field. Following the <code>body</code> field the remainder of the decrypted plaintext will be padding bytes, which may contain arbitrary data and must be ignored by the recipient.</p>
 <h1 id="negotiation">3. Negotiation</h1>
 <p>The initiator will choose the initial underlying Noise protocol, and will indicate this to the responder using the <code>negotiation_data</code> field.</p>
 <p>Upon receiving an initial NoiseSocket message, the responder has five options:</p>
