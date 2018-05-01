@@ -28,11 +28,11 @@ cryptographic choices.  In some situations the responder
 needs flexibility to accept or reject the initiator's Noise protocol choice, or
 make its own choice based on options offered by the initiator.  
 
-The **NoiseSocket** framework allows **compound protocols** where the initiator and responder negotiate a particular Noise protocol.  This is a two-step process:
+The **NoiseSocket** framework allows **compound protocols** where the initiator of the compound protocol (Alice) and the responder (Bob) negotiate a particular Noise protocol.  This is a two-step process:
 
- * The initiator begins executing an initial Noise protocol and sends an initial Noise handshake message.  As a preamble to this message, the initiator can send some **negotiation data** which indicates the initial Noise protocol and can advertise support for other Noise protocols.
+ * Alice begins executing an initial Noise protocol and sends an initial Noise handshake message.  As a preamble to this message, Alice can send some **negotiation data** which indicates the initial Noise protocol and can advertise support for other Noise protocols.
 
- * The responder can **accept** the initiator's choice of initial Noise protocol; **switch** to a different Noise protocol; **request retry** with a different Noise protocol; or **reject** the handshake entirely.  The responder indicates this choice by sending some negotiation data back to the initiator, or closing the connection.
+ * Bob can **accept** Alice's choice of initial Noise protocol; **switch** to a different Noise protocol; **request retry** with a different Noise protocol; or **reject** the handshake entirely.  Bob indicates this choice by sending some negotiation data back to Alice, or closing the connection.
 
 NoiseSocket doesn't specify the contents of negotiation data, since different applications will encode and advertise protocol support in different ways.  NoiseSocket just defines a message format to transport this data.
 
@@ -90,17 +90,17 @@ The `body_len` field is a 2-byte unsigned integer, encoded in big-endian, that s
 3. Negotiation
 ===============
 
-The initiator will choose the initial Noise protocol, and will indicate this to the responder using the `negotiation_data` field.  Upon receiving an initial NoiseSocket message, the responder has five options:
+The initiator of the NoiseSocket protocol (Alice) will choose the initial Noise protocol, and will indicate this to Bob using the `negotiation_data` field.  Upon receiving an initial NoiseSocket message, Bob has five options:
 
- * **Accept**:  The responder accepts the initial Noise protocol.  If this is an interactive protocol, the responder sends a NoiseSocket handshake message containing the next handshake message in the initial Noise protocol.  The `negotiation_data` field of this response message must be empty.
+ * **Accept**:  Bob accepts the initial Noise protocol.  If this is an interactive protocol, Bob sends a NoiseSocket handshake message containing the next handshake message in the initial Noise protocol.  The `negotiation_data` field of this response message must be empty.
 
- * **Switch**: The responder sends a NoiseSocket handshake message containing a handshake message from a new Noise protocol (e.g. a fallback protocol), different from the initial Noise protocol.  The `negotiation_data` field must be non-empty.  The `noise_message` field must be non-empty.
+ * **Switch**: Bob sends a NoiseSocket handshake message containing a handshake message from a new Noise protocol (e.g. a fallback protocol), different from the initial Noise protocol.  The `negotiation_data` field must be non-empty.  The `noise_message` field must be non-empty.
 
- * **Request Retry**: The responder requests the initiator to send a NoiseSocket handshake message containing a handshake message from a new Noise protocol, different from the initial Noise protocol.  The `negotiation_data` field must be non-empty.  The `noise_message` field must be empty.
+ * **Request Retry**: Bob requests Alice to send a NoiseSocket handshake message containing a handshake message from a new Noise protocol, different from the initial Noise protocol.  The `negotiation_data` field must be non-empty.  The `noise_message` field must be empty.
 
- * **Explicit Reject**:  The responder sends a single NoiseSocket handshake message.  The `negotiation_data` field must be non-empty and contain an error message.  The `noise_message` field must be empty.  After sending this message, the responder closes the network connection. 
+ * **Explicit Reject**:  Bob sends a single NoiseSocket handshake message.  The `negotiation_data` field must be non-empty and contain an error message.  The `noise_message` field must be empty.  After sending this message, Bob closes the network connection. 
 
- * **Silent Reject**:  The responder closes the network connection.
+ * **Silent Reject**:  Bob closes the network connection.
 
 The following table indicates the cases where the response `negotiation_data` and `noise_message` fields are non-empty.
 
@@ -117,19 +117,19 @@ The following table indicates the cases where the response `negotiation_data` an
 +--------------------------------------------------+
 
 
-The initiator's first `negotiation_data` field must indicate the initial Noise protocol and what other Noise protocols the initiator can support for the switch and retry cases.  How this is encoded is up to the application.
+Alice's first `negotiation_data` field must indicate the initial Noise protocol and what other Noise protocols Alice can support for the switch and retry cases.  How this is encoded is up to the application.
 
-If the responder's first `negotiation_data` field is empty, then the initial protocol was accepted.  If the field is non-empty, it must encode values that distinguish betwen the "switch", "retry", and "reject" cases.    In the first two cases, the `negotiation_data` must encode the Noise protocol the initiator should switch to or retry with.  In the last case, the `negotiation_data` must encode an error message.
+If Bob's first `negotiation_data` field is empty, then the initial protocol was accepted.  If the field is non-empty, it must encode values that distinguish betwen the "switch", "retry", and "reject" cases.    In the first two cases, the `negotiation_data` must encode the Noise protocol that Alice should switch to, or the Noise protocol (or Noise protocols) that Bob is requesting retry with.  In the last case, the `negotiation_data` must encode an error message.
 
-When the initiator receives the first NoiseSocket response message, and for all later handshake messages received by both parties, the only options are silent rejection, explicit rejection, or acceptance. 
+In the retry case, Alice's second message may optionally contain `negotiation_data` which specifies which protocol Alice is retrying with.  Aside from this, all handshake messages after Bob's response should contain empty `negotiation_data`, and any further errors should be handled by silent rejection and closing the connection.
 
 Example negotiation flows:
 
- * It's easy for the responder to change symmetric crypto options by switching to a different protocol.  For example, if the initial Noise protocol is `Noise_XX_25519_AESGCM_SHA256`, the responder can switch to `Noise_XX+fallback_25519_ChaChaPoly_BLAKE2s`.  This reuses the ephemeral public key from the initiator's initial message.
+ * It's easy for Bob to change symmetric crypto options by switching to a different protocol.  For example, if the initial Noise protocol is `Noise_XX_25519_AESGCM_SHA256`, Bob can switch to `Noise_XX+fallback_25519_ChaChaPoly_BLAKE2s`.  This reuses the ephemeral public key from Alice's initial message.
 
- * If the initiator attempts 0-RTT encryption that the responder fails to decrypt, the responder can also switch to a fallback protocol.  For example, if the initial Noise protocol is `Noise_IK_25519_AESGCM_SHA256`, the responder can fallback to `Noise_XX+fallback_25519_AESGCM_SHA256`.  This reuses the ephemeral public key from the initiator's initial message.
+ * If Alice attempts 0-RTT encryption that Bob fails to decrypt, Bob can also switch to a fallback protocol.  For example, if the initial Noise protocol is `Noise_IK_25519_AESGCM_SHA256`, Bob can fallback to `Noise_XX+fallback_25519_AESGCM_SHA256`.  This reuses the ephemeral public key from Alice's initial message.
 
- * If the responder wants to use a DH function that the initiator supports but did not send an ephemeral public key for, in the initial message, then the responder might need to request a retry.  For example, if the initial Noise protocol is `Noise_XX_25519_AESGCM_SHA256`, the responder can request retry with `Noise_XX_448_AESGCM_SHA256`, causing the initiator to respond with a NoiseSocket message containing the initial message from the `Noise_XX` pattern with a Curve448 ephemeral public key.
+ * If Bob wants to use a DH function that Alice supports but did not send an ephemeral public key for, in the initial message, then Bob might need to request a retry.  For example, if the initial Noise protocol is `Noise_XX_25519_AESGCM_SHA256`, Bob can request retry with `Noise_XX_448_AESGCM_SHA256`, causing Alice respond with a NoiseSocket message containing the initial message from the `Noise_XX` pattern with a Curve448 ephemeral public key.
 
 
 \newpage
@@ -139,34 +139,35 @@ Example negotiation flows:
  
 Noise protocols take a **prologue** input.  The prologue is cryptographically authenticated to make sure both parties have the same view of it.
 
-The prologue for the initial Noise protocol is set to the UTF-8 string "NoiseSocketInit1" followed by all bytes transmitted in the NoiseSocket protocol prior to the `noise_message_len`.  This consists of the following values concatenated together:
+The prologue for the initial Noise protocol is set to the UTF-8 string "NoiseSocketInit1" followed by all bytes transmitted in the NoiseSocket protocol prior to the `noise_message_len` in Alice's initial message.  This consists of the following values concatenated together:
 
  * The UTF-8 string "NoiseSocketInit1"
- * The initial message's `negotiation_data_len`
- * The initial message's `negotiation_data`
+ * The initial `negotiation_data_len`
+ * The initial `negotiation_data`
 
-If the responder switches the Noise protocol, the prologue is set to the UTF-8 string "NoiseSocketInit2" followed by all bytes received and transmitted in the NoiseSocket protocol prior to the `noise_message_len` in the response message.  This consists of the following values concatenated together:
+If Bob switches the Noise protocol, the prologue is set to the UTF-8 string "NoiseSocketInit2" followed by all bytes received and transmitted in the NoiseSocket protocol prior to the `noise_message_len` in Bob's response message.  This consists of the following values concatenated together:
 
  * The UTF-8 string "NoiseSocketInit2"
- * The initial message's `negotiation_data_len`
- * The initial message's `negotiation_data`
- * The initial message's `noise_message_len`
- * The initial message's `noise_message`
- * The responding message's `negotiation_data_len`
- * The responding message's `negotiation_data`
+ * The initial `negotiation_data_len`
+ * The initial `negotiation_data`
+ * The initial `noise_message_len`
+ * The initial `noise_message`
+ * The responding `negotiation_data_len`
+ * The responding `negotiation_data`
 
-If the responder requests retry with a different Noise protocol, the prologue is set to the UTF-8 string "NoiseSocketInit3" followed by all bytes received and transmitted in the NoiseSocket protocol prior to the `noise_message_len` in the retry message.  This consists of the following values concatenated together:
+If Bob requests retry with a different Noise protocol, the prologue is set to the UTF-8 string "NoiseSocketInit3" followed by all bytes received and transmitted in the NoiseSocket protocol prior to the `noise_message_len` in Alice's retry message.  This consists of the following values concatenated together:
 
  * The UTF-8 string "NoiseSocketInit3"
- * The initial message's `negotiation_data_len`
- * The initial message's `negotiation_data`
- * The initial message's `noise_message_len`
- * The initial message's `noise_message`
- * The responding message's `negotiation_data_len`
- * The responding message's `negotiation_data`
- * The responding message's `noise_message_len` (i.e. two bytes of zeros)
- * The retry message's `negotiation_data_len`
- * The retry message's `negotiation_data`
+ * The initial `negotiation_data_len`
+ * The initial `negotiation_data`
+ * The initial `noise_message_len`
+ * The initial `noise_message`
+ * The responding `negotiation_data_len`
+ * The responding `negotiation_data`
+ * The responding `noise_message_len` (two bytes of zeros)
+ * The responding `noise_message` (zero-length, shown for completeness)
+ * The retry `negotiation_data_len`
+ * The retry `negotiation_data`
 
 Finally, the application using NoiseSocket may append an arbitrary **application prologue** byte sequence following the above data.  
 
